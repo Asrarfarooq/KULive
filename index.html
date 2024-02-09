@@ -1,0 +1,208 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>KU Memorial Union</title>
+  <style>
+    body {
+      margin: 0;
+      padding: 0;
+      font-family: Arial, sans-serif;
+    }
+
+    img {
+      height: auto;
+      width: inherit;
+      padding-top: 10px;
+    }
+
+    #container {
+      display: flex;
+      flex-direction: column;
+      height: 100vh;
+      padding: 10px;
+      gap: 10px;
+    }
+
+    #top {
+      display: flex;
+      flex: 0 0 90%;
+      gap: 10px;
+    }
+
+    #top-left {
+      flex: 0 0 80%;
+      background-color: crimson;
+      border-radius: 10px;
+      overflow: hidden;
+    }
+
+    #top-right {
+      flex: 0 0 20%;
+      background-color: blue;
+      border-radius: 10px;
+      overflow: hidden;
+      position: relative;
+      /* Necessary for absolute positioning of carousel items */
+    }
+
+    #top-right-carousel {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      align-items: center;
+      overflow: hidden;
+    }
+
+    .carousel-item {
+      display: none;
+      text-align: center;
+      padding: 10px;
+    }
+
+    .carousel-item.active {
+      display: block;
+    }
+
+    #bottom {
+      font-size: 25px;
+      flex: 0 0 10%;
+      background-color: darkblue;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0 20px;
+      border-radius: 10px;
+      overflow: hidden;
+    }
+
+    #ku-logo {
+      width: 50px;
+      height: 50px;
+      background-color: crimson;
+      border-radius: 50%;
+    }
+
+    #clock {
+      color: white;
+    }
+
+    #weather {
+      color: white;
+    }
+
+    #news {
+      color: white;
+    }
+  </style>
+</head>
+
+<body>
+  <div id="container">
+    <div id="top">
+      <div id="top-left">
+        <!-- Placeholder for TV livestream -->
+        <iframe width="100%" height="100%" src="https://www.youtube.com/embed/B5W1EFHOJVA?autoplay=1&mute=0&controls=0"
+          frameborder="0"
+          allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture;"
+          allowfullscreen></iframe>
+
+      </div>
+      <div id="top-right">
+        <div id="top-right-carousel"></div>
+      </div>
+    </div>
+    <div id="bottom">
+      <div id="ku-logo">
+        <!-- Placeholder for KU logo -->
+        <img src="https://upload.wikimedia.org/wikipedia/commons/c/c0/University_of_Kansas_%22KU%22_logo.png"
+          alt="KU Logo" width="100%" height="100%">
+      </div>
+      <div id="clock">
+        <!-- Placeholder for clock -->
+        <div id="clock-display"></div>
+      </div>
+      <div id="weather">
+        <!-- Placeholder for weather -->
+        <div id="weather-info"></div>
+      </div>
+      <div id="news">
+        <!-- Placeholder for news -->
+        <div id="news-feed"></div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    // Clock
+    function updateTime() {
+      const now = new Date();
+      const hours = String(now.getHours()).padStart(2, '0');
+      const minutes = String(now.getMinutes()).padStart(2, '0');
+      const seconds = String(now.getSeconds()).padStart(2, '0');
+      const timeString = `${hours}:${minutes}:${seconds}`;
+      document.getElementById('clock-display').textContent = timeString;
+    }
+
+    setInterval(updateTime, 1000);
+
+    // Weather
+    fetch('https://api.weatherapi.com/v1/current.xml?key=35c50080f21848f68bd233847240802&q=66049&aqi=no')
+      .then(response => response.text())
+      .then(data => {
+        // Parse XML response
+        const parser = new DOMParser();
+        const xmlDoc = parser.parseFromString(data, 'text/xml');
+
+        // Extract weather information
+        const temperature = xmlDoc.querySelector('temp_f').textContent;
+        const condition = xmlDoc.querySelector('condition').textContent;
+
+        // Display weather information
+        document.getElementById('weather-info').textContent = `${temperature}°F`;
+      })
+      .catch(error => {
+        console.error('Error fetching weather data:', error);
+        document.getElementById('weather-info').textContent = 'Weather data unavailable';
+      });
+
+    // Fetch the RSS feed
+    fetch('https://rss.nytimes.com/services/xml/rss/nyt/Education.xml')
+      .then(response => response.text())
+      .then(str => new window.DOMParser().parseFromString(str, "text/xml"))
+      .then(data => {
+        const items = data.querySelectorAll("item");
+        let html = '';
+        // Only take the first 3 items
+        for (let i = 0; i < 3; i++) {
+          const el = items[i];
+          html += `
+                      <div class="carousel-item ${i === 0 ? 'active' : ''}">
+                          <h2><a href="${el.querySelector("link").innerHTML}" target="_blank">${el.querySelector("title").innerHTML}</a></h2>
+                          <p>${el.querySelector("description").innerHTML}</p>
+                      </div>
+                  `;
+        }
+        document.getElementById('top-right-carousel').innerHTML = html;
+
+        // Carousel effect
+        const carouselItems = document.querySelectorAll('.carousel-item');
+        let currentItem = 0;
+        const totalItems = carouselItems.length;
+        setInterval(() => {
+          carouselItems[currentItem].classList.remove('active');
+          currentItem = (currentItem + 1) % totalItems;
+          carouselItems[currentItem].classList.add('active');
+        }, 5000); // Change slide every 5 seconds
+      });
+  </script>
+</body>
+
+</html>
